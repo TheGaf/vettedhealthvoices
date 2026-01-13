@@ -1,0 +1,15 @@
+{
+  "organizations": [
+    {
+      "name": "Trusted Clinic",
+      "description": "A sample clinic.",
+      "website": "https://example.com",
+      "city": "Boston",
+      "state": "MA",
+      "tags": ["clinic", "community"],
+      "people": [
+        { "name": "Dr. Jane Doe", "title": "Medical Director", "bio": "Focuses on patient trust." }
+      ]
+    }
+  ]
+}
