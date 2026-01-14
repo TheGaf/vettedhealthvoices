@@ -1,18 +1,15 @@
-import NextAuth from 'next-auth';
+import type { NextAuthOptions } from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import GitHubProvider from 'next-auth/providers/github';
 import { PrismaAdapter } from 'next-auth/adapters';
 import { prisma } from '@/lib/prisma';
 
-const providers = [
+const providers: NextAuthOptions['providers'] = [
   EmailProvider({
     server: {
       host: process.env.EMAIL_SERVER_HOST,
       port: Number(process.env.EMAIL_SERVER_PORT || 587),
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
+      auth: { user: process.env.EMAIL_SERVER_USER, pass: process.env.EMAIL_SERVER_PASSWORD },
     },
     from: process.env.EMAIL_FROM,
   }),
@@ -23,11 +20,11 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     GitHubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
-    }) as any,
+    }),
   );
 }
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers,
   session: { strategy: 'database' },
@@ -38,6 +35,4 @@ const handler = NextAuth({
       return session;
     },
   },
-});
-
-export { handler as GET, handler as POST };
+};

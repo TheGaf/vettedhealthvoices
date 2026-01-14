@@ -1,17 +1,27 @@
-type Bucket = { resetAt: number; count: number };
+type RateLimitOptions = { limit: number; windowMs: number };
 
-const buckets = new Map<string, Bucket>();
+const buckets = new Map<string, { count: number; resetAt: number }>();
 
-export function rateLimit(key: string, limit: number, windowMs: number) {
+function getKey(req: Request) {
+  // Best-effort: in Next runtime, direct IP is not always available.
+  // Use x-forwarded-for + user agent.
+  const xf = req.headers.get('x-forwarded-for') ?? 'unknown';
+  const ua = req.headers.get('user-agent') ?? 'unknown';
+  return `${xf}|${ua}`;
+}
+
+export function rateLimit(req: Request, opts: RateLimitOptions) {
   const now = Date.now();
-  const bucket = buckets.get(key);
-  if (!bucket || bucket.resetAt < now) {
-    buckets.set(key, { resetAt: now + windowMs, count: 1 });
-    return { ok: true, remaining: limit - 1, resetAt: now + windowMs };
+  const key = getKey(req);
+  const cur = buckets.get(key);
+
+  if (!cur || cur.resetAt <= now) {
+    buckets.set(key, { count: 1, resetAt: now + opts.windowMs });
+    return;
   }
-  if (bucket.count >= limit) {
-    return { ok: false, remaining: 0, resetAt: bucket.resetAt };
+
+  cur.count += 1;
+  if (cur.count > opts.limit) {
+    throw new Response('Too Many Requests', { status: 429 });
   }
-  bucket.count += 1;
-  return { ok: true, remaining: limit - bucket.count, resetAt: bucket.resetAt };
 }
