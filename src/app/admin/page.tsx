@@ -1,34 +1,22 @@
-import { requireAdmin } from '@/lib/admin';
-import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
+import { requireAdmin } from '@/lib/auth/requireAdmin';
 
-export default async function AdminPage() {
+export default async function AdminHome() {
   await requireAdmin();
-  const pending = await prisma.submission.findMany({
-    where: { status: 'PENDING' },
-    orderBy: { createdAt: 'desc' },
-    take: 50
-  });
-
   return (
-    <div>
+    <main style={{ maxWidth: 960, margin: '40px auto', padding: 24 }}>
       <h1>Admin</h1>
-      <h2>Pending submissions</h2>
       <ul>
-        {pending.map((s) => (
-          <li key={s.id}>
-            <div>
-              <code>{s.entityType}</code> — {new Date(s.createdAt).toISOString()}
-            </div>
-            <form method="post" action={`/api/admin/submissions/${s.id}/approve`} style={{ display: 'inline' }}>
-              <button type="submit">Approve</button>
-            </form>
-            <form method="post" action={`/api/admin/submissions/${s.id}/reject`} style={{ display: 'inline', marginLeft: 8 }}>
-              <button type="submit">Reject</button>
-            </form>
-          </li>
-        ))}
-        {pending.length === 0 ? <li>No pending submissions.</li> : null}
+        <li>
+          <Link href="/admin/creators">Creators</Link>
+        </li>
+        <li>
+          <Link href="/admin/blocklists">Blocklists</Link>
+        </li>
+        <li>
+          <Link href="/api/admin/health">Admin health (API)</Link>
+        </li>
       </ul>
-    </div>
+    </main>
   );
 }

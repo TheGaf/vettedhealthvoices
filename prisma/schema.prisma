@@ -7,35 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-enum SubmitStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum EntityType {
-  ORG
-  PERSON
-}
-
 model User {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?  @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          Role     @default(USER)
+  isAdmin       Boolean   @default(false)
 
   accounts Account[]
   sessions Session[]
-
-  submissions Submission[]
-  auditLogs   AuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -77,71 +58,158 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Organization {
+model Domain {
+  id        String   @id @default(cuid())
+  host      String   @unique
+  isBlocked Boolean  @default(false)
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creators Creator[]
+  feeds    Feed[]
+}
+
+model Creator {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  primaryDomain String?
+  domainId      String?
+
+  domain Domain? @relation(fields: [domainId], references: [id])
+
+  feeds Feed[]
+  items Item[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Feed {
   id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  description String?
-  website     String?
-  city        String?
-  state       String?
-  country     String?  @default("US")
-  tags        String? // comma-separated
+  creatorId   String
+  domainId    String?
+  url         String   @unique
+  type        String   // rss|atom|json|sitemap
+  enabled     Boolean  @default(true)
+  lastFetched DateTime?
+  etag        String?
+  lastMod     String?
 
-  people      Person[]
+  creator Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  domain  Domain?  @relation(fields: [domainId], references: [id])
+
+  ingestRuns IngestRun[]
+  items      Item[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([name])
 }
 
-model Person {
-  id             String   @id @default(cuid())
-  name           String
-  title          String?
-  bio            String?
-  email          String?
-  website        String?
-  orgId          String?
-  organization   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+model Item {
+  id           String   @id @default(cuid())
+  creatorId    String
+  feedId       String?
+  title        String
+  canonicalUrl String   @unique
+  url          String
+  excerpt      String?
+  contentText  String?
+  publishedAt  DateTime?
+  fetchedAt    DateTime @default(now())
+
+  creator Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  feed    Feed?    @relation(fields: [feedId], references: [id])
+
+  reports       Report[]
+  verifications Verification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([name])
-  @@index([orgId])
 }
 
-model Submission {
-  id          String       @id @default(cuid())
-  status      SubmitStatus @default(PENDING)
-  entityType  EntityType
-  payloadJson String
-  notes       String?
+model Verification {
+  id        String   @id @default(cuid())
+  itemId    String?
+  creatorId String?
+  status    String   // pending|approved|rejected
+  notes     String?
+  decidedBy String?
 
-  createdById String
-  createdBy   User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  item    Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  creator Creator? @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  @@index([status])
-  @@index([entityType])
-  @@index([createdById])
+model DomainBlocklist {
+  id        String   @id @default(cuid())
+  host      String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+  createdBy String?
+}
+
+model KeywordBlocklist {
+  id        String   @id @default(cuid())
+  keyword   String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+  createdBy String?
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  itemId      String
+  reporterId  String?
+  reason      String
+  details     String?
+  status      String   @default("open") // open|closed
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ModerationAction {
+  id         String   @id @default(cuid())
+  actorId    String?
+  targetType String
+  targetId   String
+  action     String
+  reason     String?
+
+  createdAt DateTime @default(now())
+
+  auditLogs AuditLog[]
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  actorId   String?
-  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  action    String
-  target    String?
-  metadata  String?
-  ip        String?
+  id                 String   @id @default(cuid())
+  actorId            String?
+  action             String
+  entityType         String
+  entityId           String
+  metadataJson       String?
+  moderationActionId String?
+
+  moderationAction ModerationAction? @relation(fields: [moderationActionId], references: [id])
 
   createdAt DateTime @default(now())
+}
 
-  @@index([action])
-  @@index([actorId])
+model IngestRun {
+  id        String   @id @default(cuid())
+  feedId    String
+  status    String   // ok|error
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  error     String?
+  statsJson String?
+
+  feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
 }

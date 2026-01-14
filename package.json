@@ -1,36 +1,31 @@
 {
-  "name": "vettedhealthvoices",
-  "version": "0.1.0",
+  "name": "health-trust-directory-mvp",
   "private": true,
+  "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
-    "db:seed": "ts-node --transpile-only scripts/seed.ts",
-    "db:ingest": "ts-node --transpile-only scripts/ingest.ts",
-    "postinstall": "prisma generate"
+    "prisma": "prisma",
+    "migrate": "prisma migrate dev",
+    "seed": "ts-node --transpile-only scripts/seed.ts",
+    "ingest": "ts-node --transpile-only scripts/ingest.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.1",
-    "next": "^14.2.5",
-    "next-auth": "^4.24.11",
-    "nodemailer": "^6.9.15",
+    "@prisma/client": "^5.9.1",
+    "next": "14.2.5",
+    "next-auth": "^4.24.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^3.24.1"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "@types/react": "^18.2.67",
-    "@types/react-dom": "^18.2.22",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.5",
-    "prisma": "^6.3.1",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "prisma": "^5.9.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.4.5"
   }
 }
